@@ -3,9 +3,11 @@ import { Tabs, Tab, Box, Grid, Typography } from '@mui/material';
 import { LectureLabels } from "../../constants/lecture-labels.js";
 import { videos } from '../../constants/videos.js';
 import { VideoCard } from "../video/VideoCard.jsx";
+import {VideoSearch} from "../video/VideoSearch.jsx";
 
 export const TabPanel = () => {
     const [value, setValue] = useState(0);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const handleChange = (event, newValue) => {
         setValue(newValue);
@@ -25,8 +27,15 @@ export const TabPanel = () => {
             ? videos
             : videos.filter(video => video.type === selectedLabel);
 
+    const searchedVideos = filteredVideos.filter(video =>
+        video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        video.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
         <Box sx={{ width: '100%' }}>
+            <VideoSearch searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+
             {/* Tabs */}
             <Tabs
                 value={value}
@@ -45,12 +54,11 @@ export const TabPanel = () => {
                 ))}
             </Tabs>
 
-
             {/* Tab content */}
             <Box sx={{ p: 3, display: 'flex', justifyContent: 'center' }}>
-                {filteredVideos.length > 0 ? (
+                {searchedVideos.length > 0 ? (
                     <Grid container spacing={3} justifyContent="center" sx={{ maxWidth: '1200px' }}>
-                        {filteredVideos.map((video, index) => (
+                        {searchedVideos.map((video, index) => (
                             <Grid
                                 item
                                 key={index}
