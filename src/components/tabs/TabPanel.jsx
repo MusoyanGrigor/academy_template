@@ -1,42 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Tabs, Tab, Box, Grid, Typography } from '@mui/material';
 import { LectureLabels } from "../../constants/lecture-labels.js";
 import { videos } from '../../constants/videos.js';
 import { VideoCard } from "../video/VideoCard.jsx";
-import {VideoSearch} from "../video/VideoSearch.jsx";
+import { VideoSearch } from "../video/VideoSearch.jsx";
+import { VideoPlayerModal } from "../video/VideoPlayerModal.jsx";
 
 export const TabPanel = () => {
     const [value, setValue] = useState(0);
     const [searchTerm, setSearchTerm] = useState('');
+    const [openPlayer, setOpenPlayer] = useState(false);
+    const [activeVideoId, setActiveVideoId] = useState(null);
 
-    const handleChange = (event, newValue) => {
+    const handleChange = (_, newValue) => {
         setValue(newValue);
     };
 
     const lectureEntries = Object.entries(LectureLabels);
-
-    // Add an "All" tab at the beginning
     const allTabs = [['all', 'Բոլորը'], ...lectureEntries];
-
-    // Get the label of the selected tab
     const selectedLabel = allTabs[value][1];
 
-    // Filter videos
-    const filteredVideos =
-        selectedLabel === 'Բոլորը'
+    const filteredVideos = useMemo(() => {
+        return selectedLabel === 'Բոլորը'
             ? videos
             : videos.filter(video => video.type === selectedLabel);
+    }, [selectedLabel]);
 
-    const searchedVideos = filteredVideos.filter(video =>
-        video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        video.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const searchedVideos = useMemo(() => {
+        return filteredVideos.filter(video =>
+            video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            video.description.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [filteredVideos, searchTerm]);
+
+    const getVideoId = (url) => {
+        return url.split("v=")[1]?.split("&")[0];
+    };
+
+    const handleVideoClick = (link) => {
+        setActiveVideoId(getVideoId(link));
+        setOpenPlayer(true);
+    };
 
     return (
         <Box sx={{ width: '100%' }}>
             <VideoSearch searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
 
-            {/* Tabs */}
             <Tabs
                 value={value}
                 onChange={handleChange}
@@ -44,9 +53,7 @@ export const TabPanel = () => {
                 scrollButtons="auto"
                 allowScrollButtonsMobile
                 sx={{
-                    '& .MuiTabs-scrollButtons': {
-                        color: '#4ea1ff',
-                    },
+                    '& .MuiTabs-scrollButtons': { color: '#4ea1ff' },
                 }}
             >
                 {allTabs.map(([key, label]) => (
@@ -54,14 +61,13 @@ export const TabPanel = () => {
                 ))}
             </Tabs>
 
-            {/* Tab content */}
             <Box sx={{ p: 3, display: 'flex', justifyContent: 'center' }}>
                 {searchedVideos.length > 0 ? (
                     <Grid container spacing={3} justifyContent="center" sx={{ maxWidth: '1200px' }}>
-                        {searchedVideos.map((video, index) => (
+                        {searchedVideos.map(video => (
                             <Grid
                                 item
-                                key={index}
+                                key={video.id}
                                 xs={12}
                                 sm={6}
                                 md={4}
@@ -69,7 +75,10 @@ export const TabPanel = () => {
                                 display="flex"
                                 justifyContent="center"
                             >
-                                <VideoCard {...video} />
+                                <VideoCard
+                                    {...video}
+                                    onClick={() => handleVideoClick(video.link)}
+                                />
                             </Grid>
                         ))}
                     </Grid>
@@ -87,6 +96,12 @@ export const TabPanel = () => {
                     </Typography>
                 )}
             </Box>
+
+            <VideoPlayerModal
+                open={openPlayer}
+                onClose={() => setOpenPlayer(false)}
+                videoId={activeVideoId}
+            />
         </Box>
     );
 };
